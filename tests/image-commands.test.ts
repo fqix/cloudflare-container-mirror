@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { buildImageCommands, parseImage } from '../src/lib/image-commands.ts';
 import type { ClientId } from '../src/data/clients.ts';
 
-const proxyHost = 'fengqi.dev';
+const proxyHost = 'docker.fengqi.dev';
 const digest = 'sha256:' + 'a'.repeat(64);
 
 function build(image: string, selectedHost = 'docker.io', manualTag = '', client: ClientId = 'docker') {
@@ -23,22 +23,22 @@ function rejectsImage(image: string, selectedHost = 'docker.io', client: ClientI
 test('short Docker Hub names expand to library and restore the original local tag', () => {
   const result = build('nginx:alpine');
   assert.equal(result.commands, [
-    'docker pull fengqi.dev/docker.io/library/nginx:alpine',
-    'docker tag fengqi.dev/docker.io/library/nginx:alpine nginx:alpine',
+    'docker pull docker.fengqi.dev/docker.io/library/nginx:alpine',
+    'docker tag docker.fengqi.dev/docker.io/library/nginx:alpine nginx:alpine',
   ].join('\n'));
   assert.equal(result.needsTargetTag, false);
   assert.equal(result.targetTagError, null);
 
   assert.equal(build('nginx').commands, [
-    'docker pull fengqi.dev/docker.io/library/nginx:latest',
-    'docker tag fengqi.dev/docker.io/library/nginx:latest nginx:latest',
+    'docker pull docker.fengqi.dev/docker.io/library/nginx:latest',
+    'docker tag docker.fengqi.dev/docker.io/library/nginx:latest nginx:latest',
   ].join('\n'));
 });
 
 test('Docker Hub namespaces and supported aliases retain the correct target repository', () => {
   assert.equal(build('myteam/tool:RC_1.2-3').commands, [
-    'docker pull fengqi.dev/docker.io/myteam/tool:RC_1.2-3',
-    'docker tag fengqi.dev/docker.io/myteam/tool:RC_1.2-3 myteam/tool:RC_1.2-3',
+    'docker pull docker.fengqi.dev/docker.io/myteam/tool:RC_1.2-3',
+    'docker tag docker.fengqi.dev/docker.io/myteam/tool:RC_1.2-3 myteam/tool:RC_1.2-3',
   ].join('\n'));
 
   for (const alias of ['docker.io', 'index.docker.io', 'registry-1.docker.io']) {
@@ -55,15 +55,15 @@ test('an explicit source takes precedence over the dropdown without duplicating 
   const image = 'ghcr.io/mhsanaei/3x-ui:v3.7.0';
   const result = build(image, 'docker.io');
   assert.equal(result.commands, [
-    'docker pull fengqi.dev/ghcr.io/mhsanaei/3x-ui:v3.7.0',
-    'docker tag fengqi.dev/ghcr.io/mhsanaei/3x-ui:v3.7.0 ghcr.io/mhsanaei/3x-ui:v3.7.0',
+    'docker pull docker.fengqi.dev/ghcr.io/mhsanaei/3x-ui:v3.7.0',
+    'docker tag docker.fengqi.dev/ghcr.io/mhsanaei/3x-ui:v3.7.0 ghcr.io/mhsanaei/3x-ui:v3.7.0',
   ].join('\n'));
   assert.equal(result.commands, build('mhsanaei/3x-ui:v3.7.0', 'ghcr.io').commands);
 });
 
 test('digest-only references remain digest-only and do not invent a latest tag', () => {
   const result = build('nginx@' + digest);
-  assert.equal(result.commands, 'docker pull fengqi.dev/docker.io/library/nginx@' + digest);
+  assert.equal(result.commands, 'docker pull docker.fengqi.dev/docker.io/library/nginx@' + digest);
   assert.equal(result.needsTargetTag, true);
   assert.equal(result.targetTagError, null);
   assert.equal(result.commands.includes(':latest'), false);
@@ -73,8 +73,8 @@ test('digest-only references remain digest-only and do not invent a latest tag',
 test('a valid manual tag restores a digest-only pull using its repository digest', () => {
   const result = build('ghcr.io/acme/app@' + digest, 'docker.io', 'release_2026.11-rc1');
   assert.equal(result.commands, [
-    'docker pull fengqi.dev/ghcr.io/acme/app@' + digest,
-    'docker tag fengqi.dev/ghcr.io/acme/app@' + digest + ' ghcr.io/acme/app:release_2026.11-rc1',
+    'docker pull docker.fengqi.dev/ghcr.io/acme/app@' + digest,
+    'docker tag docker.fengqi.dev/ghcr.io/acme/app@' + digest + ' ghcr.io/acme/app:release_2026.11-rc1',
   ].join('\n'));
   assert.equal(result.targetTagError, null);
 });
@@ -82,7 +82,7 @@ test('a valid manual tag restores a digest-only pull using its repository digest
 test('invalid manual tags preserve the safe pull but never generate a docker tag command', () => {
   for (const manualTag of ['-bad', '.bad', 'bad/tag', 'bad:tag', 'a'.repeat(129), 'v1;id', '$(id)', 'v1\nid']) {
     const result = build('nginx@' + digest, 'docker.io', manualTag);
-    assert.equal(result.commands, 'docker pull fengqi.dev/docker.io/library/nginx@' + digest, manualTag);
+    assert.equal(result.commands, 'docker pull docker.fengqi.dev/docker.io/library/nginx@' + digest, manualTag);
     assert.equal(result.needsTargetTag, true);
     assert.ok(result.targetTagError, manualTag);
   }
@@ -213,21 +213,21 @@ const otherClients = [
 for (const [client, command] of otherClients) {
   test(client + ' pulls and tags with its own CLI syntax and fully qualified targets', () => {
     assert.equal(build('nginx:alpine', 'docker.io', '', client).commands, [
-      command + ' pull fengqi.dev/docker.io/library/nginx:alpine',
-      command + ' tag fengqi.dev/docker.io/library/nginx:alpine docker.io/library/nginx:alpine',
+      command + ' pull docker.fengqi.dev/docker.io/library/nginx:alpine',
+      command + ' tag docker.fengqi.dev/docker.io/library/nginx:alpine docker.io/library/nginx:alpine',
     ].join('\n'));
     assert.equal(build('myteam/tool', 'docker.io', '', client).commands, [
-      command + ' pull fengqi.dev/docker.io/myteam/tool:latest',
-      command + ' tag fengqi.dev/docker.io/myteam/tool:latest docker.io/myteam/tool:latest',
+      command + ' pull docker.fengqi.dev/docker.io/myteam/tool:latest',
+      command + ' tag docker.fengqi.dev/docker.io/myteam/tool:latest docker.io/myteam/tool:latest',
     ].join('\n'));
     assert.equal(build('ghcr.io/acme/app:v2', 'docker.io', '', client).commands, [
-      command + ' pull fengqi.dev/ghcr.io/acme/app:v2',
-      command + ' tag fengqi.dev/ghcr.io/acme/app:v2 ghcr.io/acme/app:v2',
+      command + ' pull docker.fengqi.dev/ghcr.io/acme/app:v2',
+      command + ' tag docker.fengqi.dev/ghcr.io/acme/app:v2 ghcr.io/acme/app:v2',
     ].join('\n'));
   });
 
   test(client + ' uses the same canonical digest name for pull and tag source', () => {
-    const pull = command + ' pull fengqi.dev/docker.io/library/nginx@' + digest;
+    const pull = command + ' pull docker.fengqi.dev/docker.io/library/nginx@' + digest;
     const untagged = build('nginx@' + digest, 'docker.io', '', client);
     assert.equal(untagged.commands, pull);
     assert.equal(untagged.needsTargetTag, true);
@@ -235,7 +235,7 @@ for (const [client, command] of otherClients) {
 
     assert.equal(build('nginx@' + digest, 'docker.io', 'release_1', client).commands, [
       pull,
-      command + ' tag fengqi.dev/docker.io/library/nginx@' + digest + ' docker.io/library/nginx:release_1',
+      command + ' tag docker.fengqi.dev/docker.io/library/nginx@' + digest + ' docker.io/library/nginx:release_1',
     ].join('\n'));
 
     // ctr stores the supplied pull name exactly. Canonicalizing both commands
@@ -243,7 +243,7 @@ for (const [client, command] of otherClients) {
     const pinned = build('nginx:alpine@' + digest, 'docker.io', 'ignored', client);
     assert.equal(pinned.commands, [
       pull,
-      command + ' tag fengqi.dev/docker.io/library/nginx@' + digest + ' docker.io/library/nginx:alpine',
+      command + ' tag docker.fengqi.dev/docker.io/library/nginx@' + digest + ' docker.io/library/nginx:alpine',
     ].join('\n'));
     assert.equal(pinned.needsTargetTag, false);
     assert.equal(pinned.targetTagError, null);
@@ -254,7 +254,7 @@ test('client switching preserves invalid-input and manual-tag safeguards', () =>
   for (const [client, command] of otherClients) {
     for (const manualTag of ['bad;id', 'bad\nid', '-bad', 'bad/tag']) {
       const result = build('nginx@' + digest, 'docker.io', manualTag, client);
-      assert.equal(result.commands, command + ' pull fengqi.dev/docker.io/library/nginx@' + digest);
+      assert.equal(result.commands, command + ' pull docker.fengqi.dev/docker.io/library/nginx@' + digest);
       assert.equal(result.needsTargetTag, true);
       assert.ok(result.targetTagError);
     }

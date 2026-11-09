@@ -1,17 +1,17 @@
 # Mirror / 镜像入口
 
-[打开镜像入口](https://fengqi.dev)，选择镜像源并复制拉取与还原标签命令。服务运行在 Cloudflare Workers，为支持的公开镜像提供匿名入口，无需 VPS。
+[打开镜像入口](https://docker.fengqi.dev)，选择镜像源并复制拉取与还原标签命令。服务运行在 Cloudflare Workers，为支持的公开镜像提供匿名入口，无需 VPS。
 
 ## 拉取公开镜像
 
 在原始镜像名前加上代理域名。Docker Hub 的官方镜像使用 `docker.io/library/` 前缀。
 
 ```sh
-docker pull fengqi.dev/docker.io/library/nginx:alpine
-docker tag fengqi.dev/docker.io/library/nginx:alpine nginx:alpine
+docker pull docker.fengqi.dev/docker.io/library/nginx:alpine
+docker tag docker.fengqi.dev/docker.io/library/nginx:alpine nginx:alpine
 
-docker pull fengqi.dev/ghcr.io/mhsanaei/3x-ui:v3.7.0
-docker pull fengqi.dev/registry.k8s.io/pause:3.10
+docker pull docker.fengqi.dev/ghcr.io/mhsanaei/3x-ui:v3.7.0
+docker pull docker.fengqi.dev/registry.k8s.io/pause:3.10
 ```
 
 `docker tag` 会为已拉取的镜像添加原始名称，不删除代理名称。按摘要拉取而未指定标签时，可在页面填写还原后的标签，再复制生成的两步命令。
@@ -53,7 +53,7 @@ Docker Hub 的清单和镜像层优先查 `mirror.gcr.io`，未命中时回退�
 
 ```json
 {
-  "registry-mirrors": ["https://fengqi.dev"]
+  "registry-mirrors": ["https://docker.fengqi.dev"]
 }
 ```
 
@@ -117,7 +117,7 @@ npm run deploy
 
 ### GitHub 自动部署
 
-本仓库已通过 Cloudflare Workers Builds 关联到 `docker-proxy`。推送 `main` 会自动构建并部署到 [fengqi.dev](https://fengqi.dev)。
+本仓库已通过 Cloudflare Workers Builds 关联到 `docker-proxy`。推送 `main` 会自动构建并部署到 [docker.fengqi.dev](https://docker.fengqi.dev)。
 
 | 设置 | 值 |
 | --- | --- |

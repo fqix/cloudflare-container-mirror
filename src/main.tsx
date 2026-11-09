@@ -5,7 +5,7 @@ import './styles/globals.css';
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing application root');
 
-const host = location.host || 'fengqi.dev';
+const host = location.host || 'docker.fengqi.dev';
 const origin = location.origin === 'null' ? 'https://' + host : location.origin;
 
 createRoot(root).render(<App host={host} origin={origin} />);
