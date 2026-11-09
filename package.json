@@ -3,27 +3,30 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "node --import tsx scripts/build.ts",
+    "build": "vite build && node --import tsx scripts/build-worker.ts",
     "check": "tsc --noEmit -p tsconfig.worker.json && tsc --noEmit -p tsconfig.ui.json && tsc --noEmit -p tsconfig.scripts.json",
     "test": "npm run build && node --import tsx scripts/test.ts",
-    "dev": "npm run build && wrangler dev --no-bundle",
+    "dev": "vite",
+    "preview": "vite preview",
+    "dev:worker": "npm run build && wrangler dev --no-bundle",
     "deploy": "npm run check && npm run build && wrangler deploy --no-bundle",
-    "test:ui": "node --import tsx --test tests/image-commands.test.ts"
+    "test:ui": "node --import tsx --test tests/image-commands.test.ts",
+    "test:smoke": "node --test tests/static-routing.smoke.mjs"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "4.3.5",
+    "@tailwindcss/vite": "4.3.5",
     "@types/node": "22.20.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
     "esbuild": "0.28.2",
-    "postcss": "8.5.32",
-    "shadcn": "4.23.0",
     "tailwindcss": "4.3.5",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
+    "vite": "8.3.6",
     "wrangler": "4.158.0"
   },
   "dependencies": {

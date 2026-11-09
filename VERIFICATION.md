@@ -1,8 +1,10 @@
 # Verification
 
-Verified on **2026-11-09**. Production source is `src/worker.ts`; `verify.mjs` tests the built `dist/worker.mjs` bundle. Core SHA256: `f3532afa234033f0c2e37e61bed91368d0a9c1b17bbdf159d4506ceadf291b63`.
+Verified on **2026-11-09**. Production source is `worker/index.ts`; `tests/proxy.test.mjs` tests the built `dist/worker.mjs` bundle. Core SHA256: `8969903c55ce1dc0c08a65ed74219b0986327a24c927362cb5e26135be8d19bc`.
 
 `npm run check` and `npm run build` passed. **`npm test` passed all 35 tests against the TypeScript-built bundle, including NVCR.** The test runner starts and stops a local Postman simulation automatically. It needs Node.js 22 and Postman CLI 1.75.0 or newer; fixtures require no cloud workspace or account. `POSTMAN_BIN` can select the CLI executable.
+
+The standard Vite layout builds static files in `dist/client/` and a separate proxy in `dist/worker.mjs`. Both the Vite development page and the complete local Wrangler page rendered correctly. **The static-routing smoke test passed:** HTML, emitted JavaScript and CSS returned 200 with the expected content types; `/v2/` returned the registry JSON response; missing API and asset paths retained JSON 404 responses without an SPA fallback.
 
 The React interface uses official shadcn/ui components with neutral light and dark themes. `npm run test:ui` passed all **19 command-generation regression tests**, covering Docker, Podman, ctr and Apple container, tag restoration, digest references and unsafe input rejection. The latter three clients were checked against their official command documentation and source, not by running their image pull workflows. Browser checks covered theme switching, source selection, clipboard copying, digest-only target tags, invalid tags and the Docker configuration tab.
 

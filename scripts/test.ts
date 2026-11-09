@@ -44,7 +44,7 @@ try {
     });
   });
   console.log('Postman simulation ready on localhost:41743. Running proxy checks.');
-  testProcess = spawn(process.execPath, ['--test', '--test-reporter=spec', 'verify.mjs'], { cwd: root, stdio: 'inherit' });
+  testProcess = spawn(process.execPath, ['--test', '--test-reporter=spec', 'tests/proxy.test.mjs'], { cwd: root, stdio: 'inherit' });
   process.exitCode = await new Promise<number>((finished, failed) => {
     testProcess?.once('error', failed);
     testProcess?.once('exit', (code, signal) => finished(signal ? 1 : code ?? 1));

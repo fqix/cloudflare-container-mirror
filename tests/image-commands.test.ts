@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildImageCommands, parseImage, type ClientId } from '../src/image-commands.ts';
+import { buildImageCommands, parseImage } from '../src/lib/image-commands.ts';
+import type { ClientId } from '../src/data/clients.ts';
 
 const proxyHost = 'fengqi.dev';
 const digest = 'sha256:' + 'a'.repeat(64);

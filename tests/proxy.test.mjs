@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { handle } from './dist/worker.mjs';
+import { handle } from '../dist/worker.mjs';
 
 const origin = 'https://docker.fengqi.dev';
 const registry = 'registry-1.docker.io';

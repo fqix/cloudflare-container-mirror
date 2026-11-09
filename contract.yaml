@@ -5,8 +5,8 @@ info:
   description: >-
     Minimal upstream Docker Hub contract used by the local authentication fixture.
     This is not the full proxy API: the Worker returns 200 for its own /v2/ ping
-    and supports fixed registry prefixes through src/worker.ts. Multi-source
-    routing, authentication and redirects are covered by verify.mjs and the
+    and supports fixed registry prefixes through worker/index.ts. Multi-source
+    routing, authentication and redirects are covered by tests/proxy.test.mjs and the
     Postman simulation.
 servers:
   - url: https://registry-1.docker.io

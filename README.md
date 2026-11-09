@@ -62,14 +62,47 @@ Docker Hub 的清单和镜像层优先查 `mirror.gcr.io`，未命中时回退�
 
 ## 构建与部署
 
-需要 Node.js 22 或更高版本。`src/worker.ts` 是代理入口；页面使用 React、TypeScript、Tailwind CSS 和 [shadcn/ui](https://ui.shadcn.com/docs/installation)，组件源码保存在 `src/components/ui/`。`src/App.tsx` 是页面，`src/image-commands.ts` 负责镜像地址解析与命令生成，`src/page.html` 是页面模板。构建将页面脚本和样式内联到 `dist/worker.mjs`，无需额外静态资源服务。
+使用 Vite、React、TypeScript、Tailwind CSS 和 [shadcn/ui](https://ui.shadcn.com/docs/installation)。建议使用 Node.js 22.22.3，与自动构建环境保持一致。
+
+```text
+index.html                 # Vite HTML 入口
+vite.config.ts             # React、Tailwind 与构建配置
+src/
+  main.tsx                 # React 启动入口
+  App.tsx                  # 应用装配
+  pages/                   # 页面布局
+  components/              # 业务组件
+    ui/                    # shadcn/ui 基础组件
+  hooks/                   # 主题等交互状态
+  data/                    # 镜像源、客户端元数据
+  lib/                     # 镜像解析、命令生成、通用工具
+  styles/                  # 全局样式与主题
+worker/index.ts            # Registry 代理入口
+public/                    # 原样发布的静态文件
+tests/                     # 命令、代理和静态资源路由测试
+scripts/                   # Worker 构建和测试运行脚本
+postman/                   # 本地代理测试使用的模拟上游
+wrangler.jsonc             # Worker 与静态资源部署配置
+```
+
+Vite 将前端输出到 `dist/client/`，Worker 输出到 `dist/worker.mjs`。Cloudflare Static Assets 提供页面和带哈希的 JS/CSS 文件，Registry API 请求由 Worker 处理。
+
+添加基础组件可运行 `npx shadcn@4.23.0 add <组件名>`；组件目录和样式路径由 `components.json` 配置。
 
 ```sh
 npm ci
-npm run check
-npm run build
 npm run dev
 ```
+
+`npm run dev` 启动带热更新的前端开发服务。检查并构建生产产物：
+
+```sh
+npm run check
+npm run build
+npm run preview
+```
+
+`npm run preview` 预览前端产物。使用 `npm run dev:worker` 在本地同时运行构建后的前端和镜像代理。
 
 部署时登录自己的 Cloudflare 账号。
 
@@ -78,7 +111,7 @@ npx wrangler login
 npm run deploy
 ```
 
-部署后可使用 Wrangler 给出的 `workers.dev` 地址。自定义域名在 Cloudflare 控制台的 **Workers & Pages → Worker → Settings → Domains & Routes** 中管理。使用自己的域名时，将上面的代理地址替换为你的域名。 [Cloudflare 自定义域名](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
+部署后可使用 Wrangler 给出的 `workers.dev` 地址。自定义域名在 Cloudflare 控制台的 Worker **域（Domains）** 页面中管理。使用自己的域名时，将上面的代理地址替换为你的域名。 [Cloudflare 自定义域名](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
 
 ### GitHub 自动部署
 
@@ -111,4 +144,10 @@ npm test
 
 也可以通过 `POSTMAN_BIN=/path/to/postman npm test` 指定 CLI 的位置。
 
-2026-11-09：严格类型检查、构建、35 项代理测试和 19 项命令生成测试通过。线上验证范围见上表及 [验证记录](VERIFICATION.md)。
+在另一个终端运行 `npm run dev:worker` 后，可检查页面、静态资源和 Registry API 的分流：
+
+```sh
+SMOKE_BASE_URL=http://127.0.0.1:8787 npm run test:smoke
+```
+
+2026-11-09：严格类型检查、构建、35 项代理测试、19 项命令生成测试和静态资源/API 路由检查通过。线上验证范围见上表及 [验证记录](VERIFICATION.md)。

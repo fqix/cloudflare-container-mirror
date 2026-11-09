@@ -1,5 +1,4 @@
 // Public-cache-first Docker Hub pull mirror. No accounts, uploads, or arbitrary upstream URLs.
-import HOME_HTML from './page.html';
 
 type SourceId = 'docker.io' | 'ghcr.io' | 'quay.io' | 'gcr.io' | 'registry.k8s.io'
   | 'mcr.microsoft.com' | 'docker.elastic.co' | 'nvcr.io';
@@ -281,19 +280,10 @@ async function publicRegistry(request: Request, upstream: URL, route: Route, fet
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-function renderHome(request: Request): Response {
-  return new Response(request.method === 'HEAD' ? null : HOME_HTML, {
-    headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
-  });
-}
-
 export async function handle(request: Request, fetchUpstream: Fetcher = fetch): Promise<Response> {
   const url = new URL(request.url);
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return error(405, 'UNSUPPORTED', 'Only GET and HEAD are supported', { allow: 'GET, HEAD' });
-  }
-  if (url.pathname === '/') {
-    return renderHome(request);
   }
   if (url.pathname === '/v2' || url.pathname === '/v2/') {
     return new Response(request.method === 'HEAD' ? null : '{}', { headers: {
