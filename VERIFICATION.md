@@ -4,6 +4,10 @@ Verified on **2026-11-09**. Production source is `src/worker.ts`; `verify.mjs` t
 
 `npm run check` and `npm run build` passed. **`npm test` passed all 35 tests against the TypeScript-built bundle, including NVCR.** The test runner starts and stops a local Postman simulation automatically. It needs Node.js 22 and Postman CLI 1.75.0 or newer; fixtures require no cloud workspace or account. `POSTMAN_BIN` can select the CLI executable.
 
+The React interface uses official shadcn/ui components with neutral light and dark themes. `npm run test:ui` passed all **19 command-generation regression tests**, covering Docker, Podman, ctr and Apple container, tag restoration, digest references and unsafe input rejection. The latter three clients were checked against their official command documentation and source, not by running their image pull workflows. Browser checks covered theme switching, source selection, clipboard copying, digest-only target tags, invalid tags and the Docker configuration tab.
+
+The canonical domain is **https://fengqi.dev**. Its `/v2/` endpoint returned HTTP 200 with successful TLS verification, and `docker pull fengqi.dev/docker.io/library/busybox:latest` completed successfully. The tests below also cover the same proxy core through its earlier domain.
+
 The tests exercise actual Worker handlers over local HTTP fixtures: prefix routing, fixed-endpoint anonymous authentication, credential isolation, bounded token responses, streaming, HEAD/Range, cache fallback, real error preservation, native referrers, pagination, redirect limits and rejection of untrusted targets. They establish behavior against the modeled dependencies; the production checks below separately establish live reachability for the listed samples.
 
 | Source | Sample | Production result |

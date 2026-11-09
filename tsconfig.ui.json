@@ -4,10 +4,14 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": [],
+    "types": ["react", "react-dom"],
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/ui.ts"]
+  "include": ["src/**/*.tsx", "src/image-commands.ts", "src/lib/**/*.ts"]
 }
