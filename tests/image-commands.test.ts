@@ -17,6 +17,7 @@ function rejectsImage(image: string, selectedHost = 'docker.io', client: ClientI
   if (result.ok) assert.fail('Unsafe or unsupported image produced commands: ' + image);
   assert.ok(result.error, 'Invalid images should explain why they were rejected');
   assert.equal(Object.hasOwn(result, 'commands'), false);
+  return result;
 }
 
 test('short Docker Hub names expand to library and restore the original local tag', () => {
@@ -43,6 +44,11 @@ test('Docker Hub namespaces and supported aliases retain the correct target repo
   for (const alias of ['docker.io', 'index.docker.io', 'registry-1.docker.io']) {
     assert.equal(build(alias + '/library/nginx:alpine').commands, build('nginx:alpine').commands);
   }
+
+  const namespaced = parseImage('acme-team/image:v1', 'docker.io');
+  if (!namespaced.ok) assert.fail(namespaced.error);
+  assert.equal(namespaced.source.host, 'docker.io');
+  assert.equal(namespaced.path, 'docker.io/acme-team/image:v1');
 });
 
 test('an explicit source takes precedence over the dropdown without duplicating its prefix', () => {
@@ -164,13 +170,37 @@ test('unknown registries and invalid namespaces cannot silently become Docker Hu
   rejectsImage('nginx:latest', 'unknown.example');
 });
 
-test('disabled DHI and Ollama sources cannot generate Docker commands through either input mode', () => {
-  for (const [host, image] of [
-    ['dhi.io', 'node:24'],
-    ['registry.ollama.ai', 'library/llama3.2:1b'],
+test('unknown explicit registries identify the rejected host for every client', () => {
+  for (const host of ['registry.example.com', 'localhost:5000', 'docker.io.evil.example']) {
+    for (const client of ['docker', 'podman', 'ctr', 'container'] as const) {
+      const result = rejectsImage(host + '/team/image:v1', 'ghcr.io', client);
+      assert.ok(result.error.includes(host), 'The error should identify the unsupported registry');
+      assert.match(result.error, /尚未接入/);
+    }
+  }
+});
+
+test('pasted HTTP URLs explain the image-reference format without generating commands', () => {
+  for (const image of [
+    'https://ghcr.io/acme/image:v1',
+    'http://registry.example.com/team/image:v1',
+    'HTTPS://docker.io/library/nginx:latest',
+    'https://registry.example.com/team/image?v=1#details',
   ]) {
-    rejectsImage(host + '/' + image);
-    rejectsImage(image, host);
+    const result = rejectsImage(image);
+    assert.match(result.error, /镜像名而非 URL/);
+    assert.match(result.error, /移除.*协议头/);
+    assert.equal(result.error.includes('尚未接入'), false);
+  }
+});
+
+test('disabled DHI and Ollama sources cannot generate Docker commands through either input mode', () => {
+  for (const [host, image, reason] of [
+    ['dhi.io', 'node:24', '需要登录'],
+    ['registry.ollama.ai', 'library/llama3.2:1b', 'Ollama 使用原生模型 API'],
+  ]) {
+    assert.ok(rejectsImage(host + '/' + image).error.includes(reason));
+    assert.ok(rejectsImage(image, host).error.includes(reason));
   }
 });
 

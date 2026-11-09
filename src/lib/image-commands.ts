@@ -28,6 +28,9 @@ function invalidImage(error: string): ImageResult {
 }
 
 export function parseImage(text: string, selectedHost: string): ImageResult {
+  if (/^https?:\/\//i.test(text)) {
+    return invalidImage('请输入镜像名而非 URL，请移除 http:// 或 https:// 协议头。');
+  }
   if (!text || text.length > 512 || !/^[A-Za-z0-9._:@/-]+$/.test(text)) {
     return invalidImage('请输入有效的镜像名，镜像名中不能包含空格或命令符。');
   }
@@ -40,7 +43,7 @@ export function parseImage(text: string, selectedHost: string): ImageResult {
   } else if (slash !== -1) {
     const first = text.slice(0, slash);
     if (first === 'localhost' || first.includes('.') || first.includes(':')) {
-      return invalidImage('该镜像源尚未接入。请选择下方列表中的公开镜像源。');
+      return invalidImage('镜像源“' + first + '”尚未接入。请选择下方列表中的公开镜像源。');
     }
   }
   if (!source) return invalidImage('请选择镜像源。');

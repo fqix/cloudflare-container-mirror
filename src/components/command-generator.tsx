@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { clientInfo, isClientId, type ClientId } from '../data/clients';
+import { clientInfo, isClientId } from '../data/clients';
 import { dockerHub, enabledSource, sourceInfo } from '../data/registries';
 import { buildImageCommands, explicitSource, parseImage } from '../lib/image-commands';
 import { CommandOutput } from './command-output';
@@ -10,48 +10,49 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
+const commandClients = Object.keys(clientInfo).filter(isClientId);
+
 interface CommandGeneratorProps {
   host: string;
   origin: string;
 }
 
 export function CommandGenerator({ host, origin }: CommandGeneratorProps) {
-  const [client, setClient] = useState<ClientId>('docker');
-  const [sourceHost, setSourceHost] = useState(dockerHub.host);
   const [image, setImage] = useState(dockerHub.example);
   const [targetTag, setTargetTag] = useState('');
   const imageInput = useRef<HTMLInputElement>(null);
+  const explicit = explicitSource(image);
+  const sourceHost = explicit && !explicit.disabled ? explicit.host : dockerHub.host;
 
-  function changeImage(nextImage: string, preferredHost = sourceHost): void {
-    const explicit = explicitSource(nextImage);
-    const nextHost = explicit && !explicit.disabled ? explicit.host : preferredHost;
-    const result = parseImage(nextImage, nextHost);
-    setSourceHost(nextHost);
+  function changeImage(nextImage: string): void {
+    const result = parseImage(nextImage, dockerHub.host);
     setImage(nextImage);
     if (!result.ok || result.tag !== null) setTargetTag('');
   }
 
   function changeSource(nextHost: string): void {
-    const nextImage = explicitSource(image) ? image.slice(image.indexOf('/') + 1) : image;
-    changeImage(nextImage, nextHost);
+    const source = enabledSource(nextHost);
+    if (!source) return;
+    const imageName = explicit ? image.slice(image.indexOf('/') + 1) : image;
+    if (!parseImage(imageName, dockerHub.host).ok) return;
+    changeImage(source.host + '/' + imageName);
   }
 
   function showExample(): void {
     const source = enabledSource(sourceHost);
     if (!source) return;
-    changeImage(source.example);
+    changeImage(source.host + '/' + source.example);
     imageInput.current?.focus();
   }
 
-  const result = buildImageCommands(host, image, sourceHost, targetTag, client);
-  const clientLabel = clientInfo[client].label;
+  const result = buildImageCommands(host, image, sourceHost, targetTag);
   const dockerConfig = JSON.stringify({ 'registry-mirrors': [origin] }, null, 2);
 
   return (
     <Card className="min-w-0" aria-labelledby="commands-title">
       <CardHeader>
         <CardTitle id="commands-title" className="text-lg">命令生成</CardTitle>
-        <CardDescription>选择镜像源或粘贴完整镜像名，复制命令到终端。</CardDescription>
+        <CardDescription>选择镜像源或粘贴完整镜像名，复制所用客户端的命令。</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="pull" className="min-w-0 gap-4">
@@ -60,20 +61,7 @@ export function CommandGenerator({ host, origin }: CommandGeneratorProps) {
             <TabsTrigger id="tab-docker" aria-controls="panel-docker" value="docker" className="text-xs sm:text-sm">默认 Docker Hub 配置</TabsTrigger>
           </TabsList>
           <TabsContent id="panel-pull" aria-labelledby="tab-pull" value="pull" className="min-w-0 space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="client">客户端</Label>
-                <Select value={client} onValueChange={value => { if (isClientId(value)) setClient(value); }}>
-                  <SelectTrigger id="client" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    {Object.entries(clientInfo).map(([id, info]) => (
-                      <SelectItem key={id} value={id}>{info.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid gap-3 sm:grid-cols-[minmax(10rem,0.35fr)_minmax(0,1fr)]">
               <div className="grid gap-2">
                 <Label htmlFor="source">镜像源</Label>
                 <Select value={sourceHost} onValueChange={changeSource}>
@@ -87,18 +75,21 @@ export function CommandGenerator({ host, origin }: CommandGeneratorProps) {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid min-w-0 gap-2 sm:col-span-2">
+              <div className="grid min-w-0 gap-2">
                 <Label htmlFor="image">原始镜像</Label>
                 <Input ref={imageInput} id="image" type="text" value={image} placeholder={dockerHub.example} className="font-mono"
-                  aria-describedby="image-hint pull-feedback" aria-invalid={!result.ok}
+                  aria-describedby="image-hint image-feedback" aria-invalid={!result.ok}
                   autoComplete="off" autoCapitalize="off" spellCheck={false} maxLength={512}
                   onChange={event => changeImage(event.target.value)} />
               </div>
             </div>
             <div id="image-hint" className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-              <span>支持完整镜像名、仓库和标签或 SHA-256 摘要。</span>
+              <span>未指定镜像源时默认 docker.io，完整镜像名会自动识别；支持标签或 SHA-256 摘要。</span>
               <Button id="example" type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={showExample}>使用示例</Button>
             </div>
+            <p id="image-feedback" role="status" className={result.ok ? 'sr-only' : 'text-sm text-destructive'}>
+              {result.ok ? '' : result.error}
+            </p>
             {result.ok && result.needsTargetTag && (
               <div id="restore-tag-field" className="grid max-w-xs gap-2">
                 <Label htmlFor="restore-tag">还原后的标签</Label>
@@ -111,12 +102,14 @@ export function CommandGenerator({ host, origin }: CommandGeneratorProps) {
                 </p>
               </div>
             )}
-            {client === 'ctr' && (
-              <p className="text-xs text-muted-foreground">命令使用 ctr 的默认命名空间。若指定其他命名空间，拉取和打标签需使用同一个。</p>
-            )}
-            {result.ok
-              ? <CommandOutput kind="pull" value={result.commands} clientLabel={clientLabel} />
-              : <CommandOutput kind="pull" value="请检查镜像地址" error={result.error} clientLabel={clientLabel} />}
+            <div className="grid items-start gap-4 md:grid-cols-2" role="group" aria-label="各客户端命令">
+              {commandClients.map(client => {
+                const command = client === 'docker' || !result.ok
+                  ? result
+                  : buildImageCommands(host, image, sourceHost, targetTag, client);
+                return <CommandOutput key={client} kind="pull" client={client} value={command.ok ? command.commands : '—'} disabled={!command.ok} />;
+              })}
+            </div>
           </TabsContent>
           <TabsContent id="panel-docker" aria-labelledby="tab-docker" value="docker" className="min-w-0 space-y-4">
             <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">

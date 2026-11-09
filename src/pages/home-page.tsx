@@ -18,7 +18,7 @@ export function HomePage({ host, origin }: HomePageProps) {
         </p>
       </section>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.38fr)_minmax(0,1fr)] lg:gap-5">
+      <div className="grid gap-4 lg:gap-5">
         <CommandGenerator host={host} origin={origin} />
         <RegistryTable />
       </div>

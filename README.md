@@ -16,7 +16,7 @@ docker pull fengqi.dev/registry.k8s.io/pause:3.10
 
 `docker tag` 会为已拉取的镜像添加原始名称，不删除代理名称。按摘要拉取而未指定标签时，可在页面填写还原后的标签，再复制生成的两步命令。
 
-页面可选择以下客户端，生成各自的拉取和标签还原命令：
+页面同时展示以下四种客户端的拉取和标签还原命令，共用镜像源与镜像名称输入，每组命令可独立复制。不带镜像源的名称默认使用 `docker.io`；粘贴带镜像源的完整名称（例如 `ghcr.io/mhsanaei/3x-ui:v3.7.0`）时，会自动识别并切换到对应镜像源：
 
 | 客户端 | 拉取命令 | 还原标签命令 |
 | --- | --- | --- |
@@ -24,6 +24,8 @@ docker pull fengqi.dev/registry.k8s.io/pause:3.10
 | Podman | `podman pull` | `podman tag` |
 | containerd / ctr | `ctr images pull` | `ctr images tag` |
 | Apple container（macOS） | `container image pull` | `container image tag` |
+
+无法识别或尚未接入的镜像源、需要登录的源和格式错误会显示具体原因，并禁用四组命令的复制。输入应为镜像名称，不包含 `https://` 等 URL 协议头。
 
 Podman、ctr 和 Apple container 的还原目标使用完整名称，例如 `docker.io/library/nginx:alpine`。这些客户端按摘要拉取时使用 `repo@sha256:…`，再根据原标签或手动填写的标签生成还原命令。ctr 默认使用 `default` 命名空间；如需 Kubernetes 的镜像存储，在两条命令的 `ctr` 后都加上 `-n k8s.io`。
 
@@ -150,4 +152,4 @@ npm test
 SMOKE_BASE_URL=http://127.0.0.1:8787 npm run test:smoke
 ```
 
-2026-11-09：严格类型检查、构建、35 项代理测试、19 项命令生成测试和静态资源/API 路由检查通过。线上验证范围见上表及 [验证记录](VERIFICATION.md)。
+2026-11-09：严格类型检查、构建、35 项代理测试、21 项命令生成测试和静态资源/API 路由检查通过。线上验证范围见上表及 [验证记录](VERIFICATION.md)。
