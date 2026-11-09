@@ -1,0 +1,9 @@
+version: 1
+name: Docker registry contract fixture
+slug: docker-registry-fixture
+protocol: http
+interceptRequests: true
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

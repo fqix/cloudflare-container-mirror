@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b1115">
+  <title>Mirror · 镜像入口</title>
+  <meta name="description" content="通过一个入口拉取 Docker Hub、GHCR、Quay 等公开容器镜像。">
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      line-height: 1.55;
+      color: #e9f3f5;
+      background: #0b1115;
+      --surface: #111a20;
+      --well: #0c141a;
+      --muted: #a2b4be;
+      --line: #2d414b;
+      --accent: #73edba;
+      --accent-bg: #153228;
+      --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 75% 24rem at 48% 0, #132522 0%, transparent 88%); }
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 410px;
+      pointer-events: none;
+      background-image: linear-gradient(#86c6b314 1px, transparent 1px), linear-gradient(90deg, #86c6b314 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(#000, transparent);
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: default; opacity: .5; }
+    a { color: var(--accent); }
+    :focus-visible { outline: 2px solid #8afad0; outline-offset: 3px; }
+    .shell { position: relative; width: min(100% - 48px, 1160px); margin-inline: auto; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-block: 21px; border-bottom: 1px solid #2d414b99; }
+    .brand, .repo-link { display: inline-flex; align-items: center; gap: 9px; }
+    .brand { font: 700 1rem var(--mono); }
+    .brand-mark { width: 34px; height: 34px; border: 1px solid #3a6758; border-radius: 7px; background: #162b25; color: var(--accent); display: grid; place-items: center; }
+    .brand-name { color: var(--muted); font-size: .84rem; font-weight: 520; }
+    .repo-link { text-decoration: none; color: #c6d8dd; border: 1px solid var(--line); background: #0e181b; border-radius: 6px; padding: 7px 11px; font-size: .85rem; white-space: nowrap; }
+    .repo-link:hover { color: var(--accent); border-color: #58a78a; }
+    .hero { padding: 37px 0 25px; }
+    .eyebrow { margin: 0 0 9px; color: var(--accent); font: 650 .78rem var(--mono); letter-spacing: .12em; }
+    .eyebrow span { margin-right: 6px; }
+    h1 { margin: 0; font-size: clamp(2.15rem, 5.5vw, 4rem); font-weight: 760; letter-spacing: -.065em; line-height: 1.13; }
+    .hero-accent { color: var(--accent); white-space: nowrap; }
+    .cursor { display: inline-block; width: .1em; height: .75em; margin-left: .18em; background: var(--accent); vertical-align: -.02em; }
+    .hero-summary { margin: 13px 0 0; max-width: 66ch; color: var(--muted); font-size: .96rem; }
+    .facts { display: flex; flex-wrap: wrap; gap: 7px; padding: 0; margin: 17px 0 0; list-style: none; }
+    .facts li { padding: 3px 8px; border: 1px solid #36534c; border-radius: 4px; background: #101d1d; color: #c3d8d1; font: .76rem/1.4 var(--mono); }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(330px, 1fr); gap: 16px; align-items: start; }
+    .card { min-width: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 14px 32px #0004; overflow: hidden; }
+    .terminal-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--line); background: #17232a; font: .78rem/1.4 var(--mono); color: #c5d6dd; }
+    .terminal-title { display: flex; align-items: center; gap: 12px; }
+    .terminal-dots { display: flex; gap: 5px; }
+    .terminal-dots i { display: block; width: 7px; height: 7px; border-radius: 50%; background: #52717b; }
+    .terminal-dots i:last-child { background: #5b9b84; }
+    .terminal-mode { color: var(--accent); font-size: .7rem; letter-spacing: .08em; white-space: nowrap; }
+    .tabs { display: flex; gap: 4px; padding-inline: 12px; border-bottom: 1px solid var(--line); background: #111b22; }
+    .tab { background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted); padding: 10px 12px 9px; font-size: .88rem; font-weight: 650; }
+    .tab:hover { color: #e3f2f3; background: #1b2a32; }
+    .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:focus-visible { outline-offset: -4px; }
+    .panel { padding: 18px; }
+    .fields { display: grid; grid-template-columns: minmax(135px, .33fr) minmax(0, 1fr); gap: 12px; }
+    label { display: block; color: #cedee4; font-weight: 660; font-size: .86rem; margin-bottom: 5px; }
+    input, select { display: block; min-width: 0; width: 100%; min-height: 42px; border: 1px solid #3b535e; border-radius: 6px; background: var(--well); color: #eff7f8; padding: 8px 10px; font: .9rem/1.4 var(--mono); }
+    input::placeholder { color: #8a9da6; }
+    input[aria-invalid="true"] { border-color: #ff9b96; }
+    .hint, .message { color: var(--muted); font-size: .82rem; margin: 8px 0 0; }
+    .message { min-height: 1.35em; }
+    .hint.error, .message.error { color: #ffaaa6; }
+    .restore-tag { max-width: 310px; margin-top: 14px; }
+    .example { border: 0; background: none; color: var(--accent); text-decoration: underline; margin-left: 5px; padding: 0; font-size: inherit; }
+    .command { min-width: 0; margin-top: 15px; border: 1px solid #35534e; border-radius: 7px; background: #0a1317; color: #e3f6f1; overflow: hidden; }
+    .command-head { display: flex; justify-content: space-between; align-items: center; gap: 9px; padding: 8px 11px; border-bottom: 1px solid #284039; background: #10201f; }
+    .command-title { color: #bcd1cd; font: .76rem var(--mono); }
+    .prompt { color: var(--accent); margin-right: 5px; font-weight: 750; }
+    pre { min-width: 0; max-height: 225px; overflow: auto; margin: 0; padding: 13px; color: #dbf4eb; white-space: pre; scrollbar-color: #4b6b66 #0a1317; }
+    pre:focus-visible { outline-offset: -3px; }
+    code { font: .84rem/1.6 var(--mono); }
+    .copy { flex: none; min-height: 33px; padding: 5px 10px; border-radius: 5px; border: 1px solid #83ebc2; background: var(--accent); color: #10291f; font-size: .81rem; font-weight: 730; }
+    .copy:hover:not(:disabled) { background: #acf8d8; }
+    .panel-intro { margin: 0; color: var(--muted); font-size: .88rem; }
+    .panel-intro strong, .panel-intro code { color: #d8ecee; }
+    .panel-intro + .panel-intro { margin-top: 8px; }
+    .source-header { padding: 13px 14px 12px; }
+    .source-kicker { margin: 0 0 2px; color: var(--accent); font: 650 .72rem var(--mono); letter-spacing: .09em; }
+    h2 { margin: 0; font-size: 1.2rem; letter-spacing: -.025em; }
+    .source-note { margin: 5px 0 0; font-size: .79rem; color: var(--muted); }
+    table { border-collapse: collapse; width: 100%; text-align: left; }
+    thead { border-block: 1px solid var(--line); background: #16242b; color: #bbcdd3; font-size: .76rem; }
+    th, td { padding: 6px 10px; }
+    tbody tr + tr { border-top: 1px solid #24353f; }
+    tbody th { font-weight: 640; overflow-wrap: anywhere; }
+    tbody th code { font-size: .76rem; }
+    td { font-size: .76rem; color: var(--muted); }
+    .status { display: inline-block; border: 1px solid #40545f; border-radius: 4px; background: #1b2930; color: #c3d4db; padding: 1px 6px; font-size: .72rem; font-weight: 650; white-space: nowrap; }
+    .status.verified { background: var(--accent-bg); border-color: #326852; color: #91f1c4; }
+    .status.api-verified { background: #142a39; border-color: #38647f; color: #a1d9f8; }
+    .status.login, .status.api { background: #35291b; border-color: #705835; color: #f1d095; }
+    footer { color: var(--muted); font-size: .82rem; padding-block: 19px 25px; }
+    footer p { margin: 0; }
+    @media (max-width: 850px) {
+      .workspace { grid-template-columns: minmax(0, 1fr); }
+      .source-header { padding-inline: 16px; }
+      th, td { padding-inline: 14px; }
+    }
+    @media (max-width: 530px) {
+      .shell { width: min(100% - 26px, 1160px); }
+      .top { padding-block: 16px; }
+      .hero { padding: 25px 0 18px; }
+      .hero-summary { font-size: .87rem; }
+      .fields { grid-template-columns: minmax(0, 1fr); gap: 9px; }
+      .panel { padding: 13px; }
+      .tabs { padding-inline: 6px; }
+      .tab { padding-inline: 8px; font-size: .8rem; }
+      .terminal-bar { padding-inline: 11px; }
+      th, td { padding-inline: 8px; }
+      tbody th code { font-size: .73rem; }
+      pre { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top shell">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m5 6 6 6-6 6M13 18h6"/>
+        </svg>
+      </span>
+      <span>Mirror <span class="brand-name">/ 镜像入口</span></span>
+    </div>
+    <a class="repo-link" href="https://github.com/fqix/cloudflare-container-mirror">GitHub · 使用说明 <span aria-hidden="true">↗</span></a>
+  </header>
+  <main class="shell">
+    <section class="hero" aria-labelledby="title">
+      <p class="eyebrow"><span aria-hidden="true">&gt;</span> CONTAINER MIRROR</p>
+      <h1 id="title">拉取镜像，<span class="hero-accent">保持原名<span class="cursor" aria-hidden="true"></span></span></h1>
+      <p class="hero-summary">通过 Cloudflare 拉取公开容器镜像。Docker Hub 优先查询 Google 公开缓存，未命中时仍受匿名拉取限额约束。</p>
+      <ul class="facts" aria-label="服务范围">
+        <li>8 个镜像源</li>
+        <li>1 个兼容别名</li>
+        <li>HTTPS / 443</li>
+        <li>公开只读</li>
+      </ul>
+    </section>
+    <div class="workspace">
+      <section class="card" aria-label="镜像拉取工具">
+        <div class="terminal-bar">
+          <span class="terminal-title">
+            <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            mirror / console
+          </span>
+          <span class="terminal-mode">PUBLIC PULL</span>
+        </div>
+        <div class="tabs" role="tablist" aria-label="使用方式">
+          <button class="tab" id="tab-pull" type="button" role="tab" aria-selected="true" aria-controls="panel-pull">拉取并还原镜像名</button>
+          <button class="tab" id="tab-docker" type="button" role="tab" aria-selected="false" aria-controls="panel-docker" tabindex="-1">默认 Docker Hub 配置</button>
+        </div>
+        <div class="panel" id="panel-pull" role="tabpanel" aria-labelledby="tab-pull">
+          <div class="fields">
+            <div>
+              <label for="source">镜像源</label>
+              <select id="source"></select>
+            </div>
+            <div>
+              <label for="image">原始镜像</label>
+              <input id="image" type="text" value="nginx:alpine" placeholder="nginx:alpine" aria-describedby="image-hint pull-feedback" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="512">
+            </div>
+          </div>
+          <p class="hint" id="image-hint">可粘贴完整镜像名，也可只输入仓库和标签。支持 SHA-256 摘要。<button type="button" class="example" id="example">使用示例</button></p>
+          <div class="restore-tag" id="restore-tag-field" hidden>
+            <label for="restore-tag">还原后的标签</label>
+            <input id="restore-tag" type="text" placeholder="local" aria-describedby="restore-tag-feedback" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="128">
+            <p class="hint" id="restore-tag-feedback" aria-live="polite"></p>
+          </div>
+          <div class="command">
+            <div class="command-head">
+              <span class="command-title"><span class="prompt" aria-hidden="true">$</span> Docker CLI</span>
+              <button type="button" class="copy" id="copy-pull" disabled>复制命令</button>
+            </div>
+            <pre tabindex="0" aria-label="Docker 命令"><code id="pull-command">正在生成命令…</code></pre>
+          </div>
+          <p class="message" id="pull-feedback" role="status" aria-live="polite"></p>
+        </div>
+        <div class="panel" id="panel-docker" role="tabpanel" aria-labelledby="tab-docker" hidden>
+          <p class="panel-intro">在 Linux 的 <code>/etc/docker/daemon.json</code> 或 Docker Desktop 的 <strong>Settings → Docker Engine</strong> 中合并以下配置。已有 <code>registry-mirrors</code> 数组时，将地址加入数组，保留其他配置。</p>
+          <p class="panel-intro">Linux 可重载 Docker 配置。Docker Desktop 点击 <strong>Apply &amp; restart</strong>，重启可能暂时中断运行中的容器。</p>
+          <div class="command">
+            <div class="command-head">
+              <span class="command-title"><span class="prompt" aria-hidden="true">{ }</span> daemon.json</span>
+              <button type="button" class="copy" id="copy-docker">复制配置</button>
+            </div>
+            <pre tabindex="0" aria-label="Docker 配置"><code id="docker-config"></code></pre>
+          </div>
+          <p class="message" id="docker-feedback" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+      <section class="card" aria-labelledby="sources-title">
+        <header class="source-header">
+          <p class="source-kicker">UPSTREAMS / PUBLIC</p>
+          <h2 id="sources-title">镜像源</h2>
+          <p class="source-note">已验证表示完成公开样本拉取。接口已验证表示清单和分段下载通过。各源仍受上游可用性和限额影响。</p>
+        </header>
+        <table>
+          <thead>
+            <tr><th scope="col">镜像源</th><th scope="col">状态</th><th scope="col">范围</th></tr>
+          </thead>
+          <tbody id="sources"></tbody>
+        </table>
+      </section>
+    </div>
+    <noscript><p>开启 JavaScript 后即可生成命令。也可查看 <a href="https://github.com/fqix/cloudflare-container-mirror">使用说明</a>。</p></noscript>
+  </main>
+  <footer class="shell">
+    <p>仅提供公开镜像拉取。上传及私有仓库认证暂不支持。Ollama 模型需要原生 API，此入口尚未适配。</p>
+  </footer>
+  <!--__APP_SCRIPT__-->
+</body>
+</html>

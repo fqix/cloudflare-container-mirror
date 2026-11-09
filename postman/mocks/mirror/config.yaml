@@ -1,0 +1,9 @@
+version: 1
+name: Google public Docker cache fixture
+slug: google-public-docker-cache-fixture
+protocol: http
+interceptRequests: true
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

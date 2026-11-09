@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+.wrangler/
+.env*
+.dev.vars*
+dist/
+.test-output/
+*.log
+/simulation*.ndjson
+/simulation*.err
+/verification*.txt

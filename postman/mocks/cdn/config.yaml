@@ -1,0 +1,9 @@
+version: 1
+name: Docker cdn contract fixture
+slug: docker-cdn-fixture
+protocol: http
+interceptRequests: true
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

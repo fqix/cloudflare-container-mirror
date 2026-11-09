@@ -1,0 +1,65 @@
+purpose:
+  stands_in_for: Docker Hub and its Google cache; GHCR, Quay, GCR, Kubernetes, MCR, Elastic and NVCR public APIs; their fixed anonymous auth endpoints and bounded blob CDNs.
+  unblocks: Repeatable HTTP-boundary regression tests of the TypeScript-built Worker without live credentials or large image downloads.
+assumptions:
+  - id: token-challenge-protocol
+    status: supported
+    claim: Hub uses repository-scoped Bearer authentication, while new sources can use their verified fixed anonymous auth endpoints for the tested public images.
+    reason: The Docker contract, live sample probes and final-bundle tests agree on the modeled challenge flows.
+    verification: On 2026-11-09 all 35 npm tests passed against dist/worker.mjs built from strict TypeScript. Tests cover Hub prefix/scope translation and internal anonymous exchange for authenticated public-source fixtures, including NVCR. Live production checks exercised the named samples in VERIFICATION.md.
+    source: https://docs.docker.com/reference/api/registry/auth/; ../../src/worker.ts; ../../verify.mjs; ../mocks/multisource/default.js; ../../VERIFICATION.md
+    updated_at: '2026-11-09'
+  - id: known-blob-cdns
+    status: supported
+    claim: The bounded redirect rules handle the observed public sample download locations and reject the untrusted locations modeled in the tests.
+    reason: Provider documentation supports the relevant domain families, and live HEAD or one-byte Range requests exercised the sample CDN paths. This is not an exhaustive or permanent provider allowlist.
+    verification: Final-bundle tests passed for source-specific CDN redirects, Range/HEAD, token stripping, foreign hosts, unrelated Google projects, unrelated R2 tenants and cross-source redirects. Production checks exercised each enabled source's sample CDN path, including GHCR, Elastic and NVCR without downloading their large layers in full.
+    source: ../../src/worker.ts; ../../verify.mjs; ../../VERIFICATION.md; https://docs.docker.com/desktop/enterprise/allow-list/; https://github.com/docker/docs/issues/21960; https://docs.github.com/en/actions/reference/runners/github-hosted-runners; https://docs.redhat.com/en/documentation/openshift_container_platform_installation/4.15/html/installation_configuration/configuring-firewall; https://github.com/kubernetes/registry.k8s.io/blob/main/cmd/archeio/docs/request-handling.md; https://github.com/microsoft/containerregistry/blob/main/docs/client-firewall-rules.md
+    updated_at: '2026-11-09'
+  - id: production-pull
+    status: supported
+    claim: Docker CLI pull completed through the deployed Worker for the listed Hub, GHCR, GCR, Kubernetes, MCR and Quay samples, including the Kubernetes legacy alias.
+    reason: Live Docker CLI runs completed on production revision 225754f5; the evidence is scoped to these public samples.
+    verification: On 2026-11-09 completed docker.io/library/busybox:latest, ghcr.io/mhsanaei/3x-ui:v3.7.0, gcr.io/distroless/static-debian12:latest, registry.k8s.io/pause:3.10, mcr.microsoft.com/hello-world:latest and quay.io/prometheus/busybox:latest. k8s.gcr.io/pause:3.10 also completed. GHCR reused local layers; a separate Worker request returned one byte with HTTP 206 from an 80769127-byte layer, verifying the CDN route. Earlier legacy Hub BusyBox and hello-world pulls also completed.
+    source: ../../VERIFICATION.md; ../../src/worker.ts
+    updated_at: '2026-11-09'
+  - id: google-public-cache-paths
+    status: supported
+    claim: Google cache hits stream successfully and cache failures fall back to Hub without fabricating success.
+    reason: The final-bundle tests exercise both success and failure branches; production Hub sample pulls also completed.
+    verification: The 35-test run covered cached 200/304, same-origin redirects and 206, HEAD, credential stripping, cache 401/403/404/429/500/503, bounded loops, a real 10-second abort, network errors and a stream readable before its source completed. Hub 401/429 and Retry-After were preserved on fallback.
+    source: ../mocks/mirror/default.js; ../../src/worker.ts; ../../verify.mjs; ../../VERIFICATION.md
+    updated_at: '2026-11-09'
+  - id: google-cache-live-coverage
+    status: supported
+    claim: The Google cache is selective; a missing image may still encounter Hub's anonymous pull limits.
+    reason: Google's documentation does not promise every image is cached, and live investigation observed Hub anonymous 429 after cache misses.
+    verification: Successful public sample pulls do not establish universal cache coverage or unlimited throughput. The Worker retains actual upstream limits and does not synthesize successful results for a cache miss.
+    source: https://docs.cloud.google.com/artifact-registry/docs/pull-cached-dockerhub-images; ../../src/worker.ts; ../../VERIFICATION.md
+    updated_at: '2026-11-09'
+  - id: authoritative-referrers
+    status: supported
+    claim: Referrer discovery preserves authoritative provider results and does not substitute an image cache's incomplete discovery data.
+    reason: Hub discovery uses Hub directly, while other enabled sources retain their native endpoints and responses. Tests validate strict paths, bounded opaque pagination queries and same-path Link rewriting.
+    verification: Production Hub sample pulls completed with native referrer discovery. NVCR returned a genuine empty OCI index with HTTP 200; Elastic returned its real 404. The final-bundle tests retain real 200/401/404/429, reject unsafe pagination and prevent referrers from redirecting to blob CDNs or other repositories. No empty index or not-found result is fabricated.
+    source: ../../src/worker.ts; ../../verify.mjs; ../mocks/registry/default.js; ../../VERIFICATION.md; https://github.com/containerd/containerd/blob/main/core/remotes/docker/referrers.go
+    updated_at: '2026-11-09'
+  - id: public-multisource-isolation
+    status: supported
+    claim: In the verified scenarios, new source prefixes never receive client credentials and their internally acquired anonymous tokens stay on the matching registry API.
+    reason: Every new-source fixture loop, including NVCR, asserts source routing and credential isolation in the built TypeScript implementation.
+    verification: All 35 final-bundle tests passed under the runner that automatically starts and stops Postman. Tests reject unknown sources, unknown auth realms, auth redirects, oversized or malformed token responses and cross-source CDN redirects. Anonymous auth retries once. The legacy Hub client Bearer flow remains Hub-only; Basic and cookies are not forwarded. Private and licensed images are outside the supported scope.
+    source: ../../src/worker.ts; ../../verify.mjs; ../mocks/multisource/default.js; ../../scripts/test.ts; ../../VERIFICATION.md
+    updated_at: '2026-11-09'
+  - id: elastic-nvcr-api-scope
+    status: supported
+    claim: The listed Elastic and NVCR samples passed production metadata and limited blob-read checks; full large-image pulls were not performed.
+    reason: HTTP 200/206 demonstrates these tested API and CDN paths, but does not establish a complete image download.
+    verification: On production revision 225754f5, elasticsearch/elasticsearch:8.17.0 and nvidia/cuda:12.6.3-base-ubuntu24.04 had index and platform-manifest GET/HEAD 200, config and layer HEAD 200, and one-byte Range 206. These checks used anonymous public access and did not validate private or license-gated images. DHI and Ollama remain disabled.
+    source: ../../VERIFICATION.md; ../../src/worker.ts
+    updated_at: '2026-11-09'
+fingerprints:
+  - id: typescript-multisource-worker
+    date: '2026-11-09'
+    commit: 'src/worker.ts SHA256 f3532afa234033f0c2e37e61bed91368d0a9c1b17bbdf159d4506ceadf291b63; production validation revision 225754f5'
+    cli: 'Node.js 22; Postman CLI 1.75.0; npm run check and npm run build passed; npm test passed 35 tests against the built bundle. Fixtures are local and no cloud mock workspace is required.'

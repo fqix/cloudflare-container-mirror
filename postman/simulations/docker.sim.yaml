@@ -1,0 +1,18 @@
+simulation: docker-pull-contract
+routing: header
+mocks:
+  - name: multisource
+    routeKey: multisource
+    path: postman/mocks/multisource/config.yaml
+  - name: mirror
+    routeKey: mirror
+    path: postman/mocks/mirror/config.yaml
+  - name: registry
+    routeKey: registry
+    path: postman/mocks/registry/config.yaml
+  - name: auth
+    routeKey: auth
+    path: postman/mocks/auth/config.yaml
+  - name: cdn
+    routeKey: cdn
+    path: postman/mocks/cdn/config.yaml

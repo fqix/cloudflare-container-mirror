@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info:
+  title: Docker Hub upstream authentication fixture
+  version: '1'
+  description: >-
+    Minimal upstream Docker Hub contract used by the local authentication fixture.
+    This is not the full proxy API: the Worker returns 200 for its own /v2/ ping
+    and supports fixed registry prefixes through src/worker.ts. Multi-source
+    routing, authentication and redirects are covered by verify.mjs and the
+    Postman simulation.
+servers:
+  - url: https://registry-1.docker.io
+paths:
+  /v2/:
+    get:
+      responses:
+        '401':
+          description: Bearer authentication challenge
+          headers:
+            WWW-Authenticate:
+              schema: {type: string}
+              example: Bearer realm="https://auth.docker.io/token",service="registry.docker.io"
