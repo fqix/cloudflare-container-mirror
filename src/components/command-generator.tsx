@@ -102,7 +102,7 @@ export function CommandGenerator({ host, origin }: CommandGeneratorProps) {
                 </p>
               </div>
             )}
-            <div className="grid items-start gap-4 md:grid-cols-2" role="group" aria-label="各客户端命令">
+            <div className="grid items-start gap-4" role="group" aria-label="各客户端命令">
               {commandClients.map(client => {
                 const command = client === 'docker' || !result.ok
                   ? result
